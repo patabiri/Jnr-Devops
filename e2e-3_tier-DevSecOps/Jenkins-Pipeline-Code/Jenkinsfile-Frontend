@@ -95,7 +95,7 @@ pipeline {
                 script {
                     dir('e2e-3_tier-DevSecOps/Kubernetes-Manifests-file/Frontend/') {
                         withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                            sh '''
+                            /*sh '''
                                 git config user.email "patabiri99@gmail.com"
                                 git config user.name "patabiri"
                                 BUILD_NUMBER=${BUILD_NUMBER}
@@ -106,7 +106,49 @@ pipeline {
                                 git add deployment.yaml
                                 git commit -m "Update deployment Image to version \${BUILD_NUMBER}"
                                 git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:DevSecOps_Project
-                            ''' 
+                            ''' */
+                              sh '''
+                                set -e
+                    
+                                # Make sure Git trusts the workspace (prevents "dubious ownership" on Jenkins agents)
+                                git config --global --add safe.directory "$PWD"
+                    
+                                # Ensure we have the remote set with auth and full history
+                                git remote remove origin || true
+                                git remote add origin https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git
+                                git fetch --prune --tags origin
+                    
+                                # Create/reset local branch to track the remote branch
+                                git checkout -B ${TARGET_BRANCH} origin/${TARGET_BRANCH}
+                    
+                                # Rebase local changes (if any) on top of latest remote to avoid non-fast-forward
+                                git pull --rebase origin ${TARGET_BRANCH} || true
+                    
+                                # Configure author
+                                git config user.email "patabiri99@gmail.com"
+                                git config user.name "patabiri"
+                    
+                                # --- Update the image tag safely ---
+                                # Extract current tag (after repo name) and replace with BUILD_NUMBER
+                                currentTag=$(grep -oP '(?<=${AWS_ECR_REPO_NAME}:)[0-9]+' deployment.yaml || true)
+                                if [ -z "$currentTag" ]; then
+                                  echo "Could not detect current tag; falling back to replacing a generic :<digits>"
+                                  sed -i "s#\\(${AWS_ECR_REPO_NAME}:\\)[0-9]\\+#\\1${BUILD_NUMBER}#g" deployment.yaml
+                                else
+                                  sed -i "s#${AWS_ECR_REPO_NAME}:${currentTag}#${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}#g" deployment.yaml
+                                fi
+                    
+                                git add deployment.yaml
+                                git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+                    
+                                # Retry push once to handle races between builds
+                                if ! git push origin HEAD:${TARGET_BRANCH}; then
+                                  echo "Push failed (likely non-fast-forward). Rebasing and retrying once..."
+                                  git pull --rebase origin ${TARGET_BRANCH}
+                                  git push origin HEAD:${TARGET_BRANCH}
+                                fi
+                                '''
+
                       
                         }
                     }
