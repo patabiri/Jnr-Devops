@@ -119,10 +119,10 @@ pipeline {
                                 git fetch --prune --tags origin
                     
                                 # Create/reset local branch to track the remote branch
-                                git checkout -B ${TARGET_BRANCH} origin/${TARGET_BRANCH}
+                                git checkout -B DevSecOps_Project origin/DevSecOps_Project
                     
                                 # Rebase local changes (if any) on top of latest remote to avoid non-fast-forward
-                                git pull --rebase origin ${TARGET_BRANCH} || true
+                                git pull --rebase origin DevSecOps_Project || true
                     
                                 # Configure author
                                 git config user.email "patabiri99@gmail.com"
@@ -142,10 +142,10 @@ pipeline {
                                 git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
                     
                                 # Retry push once to handle races between builds
-                                if ! git push origin HEAD:${TARGET_BRANCH}; then
+                                if ! git push origin HEAD:$DevSecOps_Project; then
                                   echo "Push failed (likely non-fast-forward). Rebasing and retrying once..."
-                                  git pull --rebase origin ${TARGET_BRANCH}
-                                  git push origin HEAD:${TARGET_BRANCH}
+                                  git pull --rebase origin DevSecOps_Project
+                                  git push origin HEAD:DevSecOps_Project
                                 fi
                                 '''
 
