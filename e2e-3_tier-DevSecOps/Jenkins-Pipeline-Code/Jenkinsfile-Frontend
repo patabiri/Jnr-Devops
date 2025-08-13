@@ -95,7 +95,7 @@ pipeline {
                 script {
                     dir('e2e-3_tier-DevSecOps/Kubernetes-Manifests-file/Frontend/') {
                         withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                            sh '''
+                            /*sh '''
                                 git config user.email "patabiri99@gmail.com"
                                 git config user.name "patabiri"
                                 BUILD_NUMBER=${BUILD_NUMBER}
@@ -106,7 +106,43 @@ pipeline {
                                 git add deployment.yaml
                                 git commit -m "Update deployment Image to version \${BUILD_NUMBER}"
                                 git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:DevSecOps_Project
+                            '''  */
+                             sh '''
+                                # Exit script on any error
+                                set -e
+
+                                # Configure Git user details for the commit
+                                git config user.email "patabiri99@gmail.com"
+                                git config user.name "patabiri"
+
+                                # Set up the remote with authentication token
+                                git remote set-url origin https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git
+                                
+                                # 1. Fetch the latest state from the remote repository
+                                echo "Fetching latest from origin..."
+                                git fetch origin
+
+                                # 2. Check out the target branch, ensuring it tracks the remote branch
+                                echo "Checking out target branch ${TARGET_BRANCH}..."
+                                git checkout -B ${TARGET_BRANCH} origin/${TARGET_BRANCH}
+
+                                # 3. Modify the deployment file
+                                echo "Updating deployment.yaml with image tag: ${BUILD_NUMBER}"
+                                # This sed command is more robust. It looks for the image line and replaces the tag.
+                                sed -i "s|image: ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:.*|image: ${REPOSITORY_URI}${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}|" deployment.yaml
+                                
+                                # 4. Add and commit the changes
+                                git add deployment.yaml
+                                # Use "git commit --allow-empty" in case the tag is already correct, preventing a failure
+                                git commit -m "ci: Update Kubernetes image to ${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}" --allow-empty
+
+                                # 5. Pull with rebase and push
+                                echo "Rebasing local changes and pushing to ${TARGET_BRANCH}..."
+                                git pull --rebase origin ${TARGET_BRANCH}
+                                git push origin ${TARGET_BRANCH}
                             '''
+
+
                         }
                     }
                 }
