@@ -95,7 +95,7 @@ pipeline {
                 script {
                     dir('e2e-3_tier-DevSecOps/Kubernetes-Manifests-file/Frontend/') {
                         withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                            /*sh '''
+                            sh '''
                                 git config user.email "patabiri99@gmail.com"
                                 git config user.name "patabiri"
                                 BUILD_NUMBER=${BUILD_NUMBER}
@@ -106,27 +106,7 @@ pipeline {
                                 git add deployment.yaml
                                 git commit -m "Update deployment Image to version \${BUILD_NUMBER}"
                                 git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:DevSecOps_Project
-                            '''  */
-                                sh '''
-                                git fetch origin
-                                git checkout -B e2e-3-tier-DevSecOps origin/e2e-3-tier-DevSecOps
-                                git reset --hard origin/e2e-3-tier-DevSecOps
-                                
-                                # update image tag in Backend only
-                                imageTag=$(grep -oP "(?<=$AWS_ECR_REPO_NAME:)[0-9]+" e2e-3_tier-DevSecOps/Kubernetes-Manifests-file/Backend/deployment.yaml || true)
-                                if [ -z "$imageTag" ]; then
-                                  sed -i "s#\(${AWS_ECR_REPO_NAME}:\)[0-9]\+#\1${BUILD_NUMBER}#g" e2e-3_tier-DevSecOps/Kubernetes-Manifests-file/Backend/deployment.yaml
-                                else
-                                  sed -i "s#${AWS_ECR_REPO_NAME}:${imageTag}#${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}#g" e2e-3_tier-DevSecOps/Kubernetes-Manifests-file/Backend/deployment.yaml
-                                fi
-                                
-                                git config user.email "patabiri99@gmail.com"
-                                git config user.name "patabiri"
-                                git add e2e-3_tier-DevSecOps/Kubernetes-Manifests-file/Backend/deployment.yaml
-                                git commit -m "Update deployment Image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-                                
-                                git push origin HEAD:e2e-3-tier-DevSecOps
-                                '''
+                            ''' 
 
                         }
                     }
