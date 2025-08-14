@@ -96,7 +96,7 @@ pipeline {
                     dir('gitops_proj/Kubernetes-Manifests-file/Frontend') {
                         withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                             sh '''
-                                git config user.email "patabiri99gmail.com"
+                                git config user.email "patabiri99@gmail.com"
                                 git config user.name "patabiri"
                                 BUILD_NUMBER=${BUILD_NUMBER}
                                 echo $BUILD_NUMBER
