@@ -21,12 +21,12 @@ pipeline {
         stage('Checkout from Git') {
             steps {
                 // Assuming Git credentials and repository are correctly setup
-                git branch: 'e2e-3-tier-DevSecOps', credentialsId: 'github-token', url: 'https://github.com/patabiri/Jnr-Devops.git'
+                git branch: 'gitops_project', credentialsId: 'github-token', url: 'https://github.com/patabiri/Jnr-Devops.git'
             }
         }
         stage('Sonarqube Analysis') {
             steps {
-                dir('Application-Code/backend') {
+                dir('gitops_proj/Application-Code/backend') {
                     withSonarQubeEnv('sonar-server') {
                         sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=three-tier-backend -Dsonar.projectName=three-tier-backend"
                     }
@@ -43,7 +43,7 @@ pipeline {
         }
         stage('OWASP Dependency-Check Scan') {
             steps {
-                dir('Application-Code/backend') {
+                dir('gitops_proj/Application-Code/backend') {
                     dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
                 }
@@ -51,7 +51,7 @@ pipeline {
         }
          stage('Trivy File Scan') {
             steps {
-                dir('Application-Code/backend') {
+                dir('gitops_proj/Application-Code/backend') {
                     sh 'trivy fs . > trivyfs.txt'
                 }
             }
@@ -59,7 +59,7 @@ pipeline {
         stage("Docker Image Build") {
             steps {
                 script {
-                    dir('Application-Code/backend') {
+                    dir('gitops_proj/Application-Code/backend') {
                             sh 'docker system prune -f'
                             sh 'docker container prune -f'
                             sh 'docker build -t ${AWS_ECR_REPO_NAME} .'
@@ -83,7 +83,7 @@ pipeline {
         }
         stage('Checkout Code') {
             steps {
-                 git branch: 'e2e-3-tier-DevSecOps', credentialsId: 'github-token', url: 'https://github.com/patabiri/Jnr-Devops.git'
+                 git branch: 'gitops_project', credentialsId: 'github-token', url: 'https://github.com/patabiri/Jnr-Devops.git'
             }
         }
         stage('Update Kubernetes Deployment') {
