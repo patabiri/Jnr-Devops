@@ -93,7 +93,7 @@ pipeline {
             }
             steps {
                 script {
-                    dir('Kubernetes-Manifests-file/Backend') {
+                    dir('gitops_proj/Kubernetes-Manifests-file/Backend') {
                         withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                             sh '''
                                 git config user.email "patabiri99@gmail.com"
